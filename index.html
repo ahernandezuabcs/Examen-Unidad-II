@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bomberman</title>
+    <style type="text/css">
+        body {
+            background-color: gray;
+        }
+
+        canvas {
+            background-color: white;
+            display: block;
+            margin: 0 auto;
+        }
+
+        #info {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px;
+            color: white;
+        }
+
+        #left-panel,
+        #right-panel {
+            width: 150px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="info">
+        <div id="left-panel">
+            <h3>Score:</h3>
+            <p id="score">0</p>
+            <h3>Timer:</h3>
+            <p id="time">0</p>
+        </div>
+        <div id="right-panel">
+            <h3>Como jugar?</h3>
+            <p>Muevete con WASD o las flechitas</p>
+            <p>Pon una bombita con X</p>
+        </div>
+    </div>
+
+    <canvas id="myCanvas" width="900" height="700"></canvas>
+
+    <script>
+        const myCanvas = document.getElementById("myCanvas");
+        const ctx = myCanvas.getContext("2d");
+        var dir = "";
+        var vel = 2;
+        var muros = [];
+        var bombas = [];
+        var explocion = 3000; 
+        var score = 0;
+        var time = 0;
+
+        class Rectangulo {
+            constructor(axisX, axisY, width, height, fillColor, vel, destructible = false) {
+                this.axisX = axisX;
+                this.axisY = axisY;
+                this.width = width;
+                this.height = height;
+                this.fillColor = fillColor;
+                this.vel = vel;
+                this.destructible = destructible;
+            }
+            deteccionColision(otro) {
+                return (this.axisX < otro.axisX + otro.width &&
+                    this.axisX + this.width > otro.axisX &&
+                    this.axisY < otro.axisY + otro.height &&
+                    this.axisY + this.height > otro.axisY);
+            }
+        }
+
+        class Bomba {
+            constructor(axisX, axisY, size) {
+                this.axisX = axisX;
+                this.axisY = axisY;
+                this.size = size;
+                this.exploded = false;
+                this.timePlaced = Date.now();
+            }
+            explotar() {
+                this.exploded = true;
+            }
+
+            deteccionColision(otro) {
+                return (
+                    this.axisX < otro.axisX + otro.width &&
+                    this.axisX + this.size > otro.axisX &&
+                    this.axisY < otro.axisY + otro.height &&
+                    this.axisY + this.size > otro.axisY
+                );
+            }
+
+            
+            estaDentroRango(otro) {
+                const rangoExplosion = this.size * 3; 
+                return (
+                    Math.abs(this.axisX - otro.axisX) < rangoExplosion &&
+                    Math.abs(this.axisY - otro.axisY) < rangoExplosion
+                );
+            }
+        }
+
+        var jugador = new Rectangulo(100, 100, 20, 20, "green", 5);
+
+        // mapa
+        muros.push(new Rectangulo(0, 0, 900, 20, "black", null)); // Muro superior
+        muros.push(new Rectangulo(0, 0, 20, 700, "black", null)); // Muro izquierdo
+        muros.push(new Rectangulo(880, 0, 20, 700, "black", null)); // Muro derecho
+        muros.push(new Rectangulo(0, 680, 900, 20, "black", null)); // Muro inferior
+
+        // Obstaculos
+        muros.push(new Rectangulo(100, 200, 100, 20, "blue", null, true)); 
+        muros.push(new Rectangulo(300, 100, 20, 100, "black", null)); 
+        muros.push(new Rectangulo(500, 300, 100, 20, "blue", null, true)); 
+        muros.push(new Rectangulo(600, 400, 20, 100, "black", null)); 
+        muros.push(new Rectangulo(200, 500, 100, 20, "blue", null, true)); 
+        muros.push(new Rectangulo(700, 200, 20, 100, "black", null)); 
+
+        s
+        document.addEventListener("keydown", function (e) {
+            switch (e.key) {
+                case "w":
+                    dir = "arriba";
+                    break;
+                case "s":
+                    dir = "abajo";
+                    break;
+                case "a":
+                    dir = "izquierda";
+                    break;
+                case "d":
+                    dir = "derecha";
+                    break;
+                case "x": 
+                    bombas.push(new Bomba(jugador.axisX, jugador.axisY, 20));
+                    break;
+            }
+        });
+
+        function actualizar() {
+            
+            switch (dir) {
+                case 'arriba':
+                    jugador.axisY -= vel;
+                    break;
+                case 'abajo':
+                    jugador.axisY += vel;
+                    break;
+                case 'derecha':
+                    jugador.axisX += vel;
+                    break;
+                case 'izquierda':
+                    jugador.axisX -= vel;
+                    break;
+            }
+
+            
+            muros.forEach(function (muro) {
+                if (jugador.deteccionColision(muro)) {
+                    switch (dir) {
+                        case 'arriba':
+                            jugador.axisY += vel;
+                            break;
+                        case 'abajo':
+                            jugador.axisY -= vel;
+                            break;
+                        case 'derecha':
+                            jugador.axisX -= vel;
+                            break;
+                        case 'izquierda':
+                            jugador.axisX += vel;
+                            break;
+                    }
+                }
+            });
+
+            
+            bombas = bombas.filter((bomba) => {
+                if (Date.now() - bomba.timePlaced >= explocion) {
+                    bomba.explotar(); 
+
+                    
+                    muros = muros.filter((muro) => {
+                        if (muro.destructible && bomba.estaDentroRango(muro)) {
+                            score += 100; 
+                            return false; 
+                        }
+                        return true; 
+                    });
+
+                    return false; 
+                }
+                return true; 
+            });
+        }
+
+        function pintar() {
+            ctx.clearRect(0, 0, myCanvas.width, myCanvas.height);
+
+            ctx.fillStyle = jugador.fillColor;
+            ctx.fillRect(jugador.axisX, jugador.axisY, jugador.width, jugador.height);
+
+            muros.forEach((muro) => {
+                ctx.fillStyle = muro.fillColor;
+                ctx.fillRect(muro.axisX, muro.axisY, muro.width, muro.height);
+            });
+
+           
+            bombas.forEach((bomba) => {
+                ctx.fillStyle = bomba.exploded ? "orange" : "black";
+                ctx.fillRect(bomba.axisX, bomba.axisY, bomba.size, bomba.size);
+
+                if (bomba.exploded) {
+                    
+                    ctx.strokeStyle = "red";
+                    ctx.lineWidth = 2;
+                    ctx.strokeRect(bomba.axisX - bomba.size, bomba.axisY - bomba.size, bomba.size * 3, bomba.size * 3);
+                }
+            });
+
+            
+            document.getElementById("score").innerText = score;
+            document.getElementById("time").innerText = Math.floor(time / 1000);
+
+            actualizar();
+            time += 16;
+            requestAnimationFrame(pintar);
+        }
+
+        requestAnimationFrame(pintar);
+    </script>
+</body>
+
+</html>
