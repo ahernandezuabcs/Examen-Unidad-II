@@ -51,14 +51,17 @@
         const myCanvas = document.getElementById("myCanvas");
         const ctx = myCanvas.getContext("2d");
 
-        let gameStarted = false; 
+        let gameStarted = false;
         var dir = "";
         var vel = 2;
         var muros = [];
         var bombas = [];
-        var explocion = 3000; 
+        var explocion = 3000;
         var score = 0;
         var time = 0;
+        var musica;
+        var lanzarGenkidama;
+        var explotaGenkidama;
 
         class Rectangulo {
             constructor(axisX, axisY, width, height, fillColor, vel, destructible = false) {
@@ -100,7 +103,7 @@
             }
 
             estaDentroRango(otro) {
-                const rangoExplosion = this.size * 3; 
+                const rangoExplosion = this.size * 3;
                 return (
                     Math.abs(this.axisX - otro.axisX) < rangoExplosion &&
                     Math.abs(this.axisY - otro.axisY) < rangoExplosion
@@ -110,22 +113,28 @@
 
         var jugador = new Rectangulo(100, 100, 20, 20, "green", 5);
 
-        
+
         muros.push(new Rectangulo(0, 0, 900, 20, "black", null)); // Muro superior
         muros.push(new Rectangulo(0, 0, 20, 700, "black", null)); // Muro izquierdo
         muros.push(new Rectangulo(880, 0, 20, 700, "black", null)); // Muro derecho
         muros.push(new Rectangulo(0, 680, 900, 20, "black", null)); // Muro inferior
-        muros.push(new Rectangulo(100, 200, 100, 20, "blue", null, true)); 
-        muros.push(new Rectangulo(300, 100, 20, 100, "black", null)); 
-        muros.push(new Rectangulo(500, 300, 100, 20, "blue", null, true)); 
-        muros.push(new Rectangulo(600, 400, 20, 100, "black", null)); 
-        muros.push(new Rectangulo(200, 500, 100, 20, "blue", null, true)); 
-        muros.push(new Rectangulo(700, 200, 20, 100, "black", null)); 
+        muros.push(new Rectangulo(100, 200, 100, 20, "blue", null, true));
+        muros.push(new Rectangulo(300, 100, 20, 100, "black", null));
+        muros.push(new Rectangulo(500, 300, 100, 20, "blue", null, true));
+        muros.push(new Rectangulo(600, 400, 20, 100, "black", null));
+        muros.push(new Rectangulo(200, 500, 100, 20, "blue", null, true));
+        muros.push(new Rectangulo(700, 200, 20, 100, "black", null));
 
-        
+
+        musica = new sound("Numb8bit.mp3");
+        lanzarGenkidama = new sound("throwBomb.mp3")
+        explotaGenkidama= new sound ("explodeBomb.mp3")
+
         document.addEventListener("keydown", function (e) {
             if (e.code === "Enter" && !gameStarted) {
                 gameStarted = true;
+                
+                musica.play();
                 requestAnimationFrame(pintar);
             }
 
@@ -143,8 +152,9 @@
                     case "d":
                         dir = "derecha";
                         break;
-                    case "b": 
+                    case "b":
                         bombas.push(new Bomba(jugador.axisX, jugador.axisY, 20));
+                        lanzarGenkidama.play();
                         break;
                 }
             }
@@ -166,7 +176,7 @@
                     break;
             }
 
-            
+
             muros.forEach(function (muro) {
                 if (jugador.deteccionColision(muro)) {
                     switch (dir) {
@@ -186,10 +196,11 @@
                 }
             });
 
-            
+
             bombas = bombas.filter((bomba) => {
                 if (Date.now() - bomba.timePlaced >= explocion) {
                     bomba.explotar();
+                    explotaGenkidama.play();
                     muros = muros.filter((muro) => {
                         if (muro.destructible && bomba.estaDentroRango(muro)) {
                             score += 100;
@@ -203,11 +214,26 @@
             });
         }
 
+        function sound(src) {
+            this.sound = document.createElement("audio");
+            this.sound.src = src;
+            this.sound.setAttribute("preload", "auto");
+            this.sound.setAttribute("controls", "none");
+            this.sound.style.display = "none";
+            document.body.appendChild(this.sound);
+            this.play = function () {
+                this.sound.play();
+            }
+            this.stop = function () {
+                this.sound.pause();
+            }
+        }
+
         function pintar() {
             ctx.clearRect(0, 0, myCanvas.width, myCanvas.height);
 
             if (!gameStarted) {
-                
+
                 ctx.fillStyle = "black";
                 ctx.fillRect(0, 0, myCanvas.width, myCanvas.height);
                 ctx.fillStyle = "white";
@@ -243,7 +269,7 @@
             }
         }
 
-        
+
         pintar();
     </script>
 </body>
