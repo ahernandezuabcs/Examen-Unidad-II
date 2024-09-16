@@ -45,12 +45,12 @@
         </div>
         <div id="right-panel">
             <h3>¿Cómo jugar?</h3>
-            <p>Muévete con WASD o las flechas</p>
+            <p>Muévete con WASD</p>
             <p>Pon una bomba con B</p>
         </div>
     </div>
 
-    <canvas id="myCanvas" width="900" height="700"></canvas>
+    <canvas id="myCanvas" width="600" height="600"></canvas>
 
     <script>
         const myCanvas = document.getElementById("myCanvas");
@@ -61,28 +61,20 @@
         let vel = 2;
         let muros = [];
         let bombas = [];
-        const explosionDuration = 1800; 
-        const explosionDisplayTime = 500; 
+        const explosionDuration = 1800;
+        const explosionDisplayTime = 500;
+
         const explosion = new Image();
         explosion.src = 'explosion.png';
-        explosion.onload = () => {
-            console.log('Explosion image loaded successfully');
-        };
-        explosion.onerror = () => {
-            console.error('Failed to load explosion image');
-        };
 
         const genkidama = new Image();
         genkidama.src = 'genkidama1.png';
-        genkidama.onload = () => {
-            console.log('Genkidama image loaded successfully');
-        };
-        genkidama.onerror = () => {
-            console.error('Failed to load genkidama image');
-        };
+
+        const goku = new Image();
+        goku.src = 'goku.png';
 
         class Rectangulo {
-            constructor(axisX, axisY, width, height, fillColor, vel, destructible = false) {
+            constructor(axisX, axisY, width, height, fillColor, vel, destructible = false, scale = 1) {
                 this.axisX = axisX;
                 this.axisY = axisY;
                 this.width = width;
@@ -90,6 +82,7 @@
                 this.fillColor = fillColor;
                 this.vel = vel;
                 this.destructible = destructible;
+                this.scale = scale;
             }
 
             deteccionColision(otro) {
@@ -107,13 +100,13 @@
                 this.size = size;
                 this.exploded = false;
                 this.timePlaced = Date.now();
-                this.explosionStartTime = 0; 
-                this.scale = 1.5;
+                this.explosionStartTime = 0;
+                this.scale = 1; 
             }
 
             explotar() {
                 this.exploded = true;
-                this.explosionStartTime = Date.now(); 
+                this.explosionStartTime = Date.now();
             }
 
             deteccionColision(otro) {
@@ -126,7 +119,7 @@
             }
 
             estaDentroRango(otro) {
-                const rangoExplosion = this.size * 3;
+                const rangoExplosion = this.size * 1.5;
                 return (
                     Math.abs(this.axisX - otro.axisX) < rangoExplosion &&
                     Math.abs(this.axisY - otro.axisY) < rangoExplosion
@@ -134,19 +127,15 @@
             }
         }
 
-        const jugador = new Rectangulo(100, 100, 20, 20, "green", 5);
+        const jugador = new Rectangulo(100, 100, 30, 30, "yellow", 2, null, 1); 
 
-        muros.push(new Rectangulo(0, 0, 900, 20, "black", null)); 
-        muros.push(new Rectangulo(0, 0, 20, 700, "black", null)); 
-        muros.push(new Rectangulo(880, 0, 20, 700, "black", null)); 
-        muros.push(new Rectangulo(0, 680, 900, 20, "black", null)); 
         function Sound(src, volume = 0.7) {
             this.sound = document.createElement("audio");
             this.sound.src = src;
             this.sound.setAttribute("preload", "auto");
             this.sound.setAttribute("controls", "none");
             this.sound.style.display = "none";
-            this.sound.volume = volume; 
+            this.sound.volume = volume;
             document.body.appendChild(this.sound);
             this.play = function () {
                 this.sound.currentTime = 0;
@@ -157,15 +146,16 @@
             }
         }
 
-        const musica = new Sound("Numb8bit.mp3", 0.7);
+        const musica = new Sound("Numb8bit1.mp3", 0.7);
         const lanzarGenkidama = new Sound("throwBomb.mp3", 0.7);
-        const explotaGenkidama = new Sound("explodeBomb.mp3", 0.7); 
+        const explotaGenkidama = new Sound("explodeBomb.mp3", 0.7);
 
         document.addEventListener("keydown", function (e) {
             if (e.code === "Enter" && !gameStarted) {
                 gameStarted = true;
                 musica.play();
-                requestAnimationFrame(pintar);
+                startTime = Date.now();
+                requestAnimationFrame(pintar); 
             }
 
             if (gameStarted) {
@@ -183,8 +173,11 @@
                         dir = "derecha";
                         break;
                     case "b":
-                        bombas.push(new Bomba(jugador.axisX, jugador.axisY, 20));
+                        bombas.push(new Bomba(jugador.axisX, jugador.axisY, 30));
                         lanzarGenkidama.play();
+                        break;
+                    case "m":
+                        musica.stop();
                         break;
                 }
             }
@@ -205,6 +198,11 @@
                     jugador.axisX -= vel;
                     break;
             }
+
+            if (jugador.axisX < 0) jugador.axisX = 0;
+            if (jugador.axisY < 0) jugador.axisY = 0;
+            if (jugador.axisX + jugador.width > myCanvas.width) jugador.axisX = myCanvas.width - jugador.width;
+            if (jugador.axisY + jugador.height > myCanvas.height) jugador.axisY = myCanvas.height - jugador.height;
 
             muros.forEach(function (muro) {
                 if (jugador.deteccionColision(muro)) {
@@ -239,41 +237,40 @@
                             }
                             return true;
                         });
-                        return false; 
+                        return false;
                     }
                 }
                 return true;
             });
         }
 
-    
-        function generarObstaculosNoDestructibles(cantidad) {
-            for (let i = 0; i < cantidad; i++) {
-                let obstaculo;
-                do {
-                    let x = Math.floor(Math.random() * (myCanvas.width - 40));
-                    let y = Math.floor(Math.random() * (myCanvas.height - 40));
-                    obstaculo = new Rectangulo(x, y, 40, 40, "black", null, false);
-                } while (muros.some(m => m.deteccionColision(obstaculo)));
-                muros.push(obstaculo);
-            }
-        }
+        function generarEscenarioBomberman() {tamanio
+            const tamanio = 40;
+            const rows = myCanvas.height / tamanio;
+            const cols = myCanvas.width / tamanio;
 
-    
-        function generarObstaculosDestructibles(cantidad) {
-            for (let i = 0; i < cantidad; i++) {
-                let obstaculo;
-                do {
-                    let x = Math.floor(Math.random() * (myCanvas.width - 40));
-                    let y = Math.floor(Math.random() * (myCanvas.height - 40));
-                    obstaculo = new Rectangulo(x, y, 40, 40, "blue", null, true);
-                } while (muros.some(m => m.deteccionColision(obstaculo)));
-                muros.push(obstaculo);
+            
+            for (let row = 0; row < rows; row++) {
+                for (let col = 0; col < cols; col++) {
+                    if (row % 2 === 1 && col % 2 === 1) {
+                        muros.push(new Rectangulo(col * tamanio, row * tamanio, tamanio, tamanio, "black", null, false));
+                    }
+                }
+            }
+
+            
+            for (let row = 0; row < rows; row++) {
+                for (let col = 0; col < cols; col++) {
+                    if ((row % 2 === 0 || col % 2 === 0) && Math.random() < 0.3) {
+                        muros.push(new Rectangulo(col * tileSize, row * tileSize, tileSize, tileSize, "brown", null, true));
+                    }
+                }
             }
         }
 
         function pintar() {
             ctx.clearRect(0, 0, myCanvas.width, myCanvas.height);
+
             if (!gameStarted) {
                 ctx.fillStyle = "black";
                 ctx.fillRect(0, 0, myCanvas.width, myCanvas.height);
@@ -282,43 +279,53 @@
                 ctx.font = "60px 'DBZ'";
                 ctx.textAlign = "center";
                 ctx.fillText("Dragon Bomberman Z", myCanvas.width / 2, myCanvas.height / 2 - 50);
-
                 ctx.fillStyle = "rgb(223,31,46)";
                 ctx.font = "30px Arial";
                 ctx.fillText("Presiona ENTER para empezar", myCanvas.width / 2, myCanvas.height / 2 + 50);
-            } else {
-                ctx.fillStyle = jugador.fillColor;
-                ctx.fillRect(jugador.axisX, jugador.axisY, jugador.width, jugador.height);
-
-                muros.forEach((muro) => {
-                    ctx.fillStyle = muro.fillColor;
-                    ctx.fillRect(muro.axisX, muro.axisY, muro.width, muro.height);
-                });
-
-                bombas.forEach((bomba) => {
-                    if (!bomba.exploded) {
-                        ctx.drawImage(genkidama, bomba.axisX, bomba.axisY, bomba.size * bomba.scale, bomba.size * bomba.scale);
-                    } else if (Date.now() - bomba.explosionStartTime <= explosionDisplayTime) {
-                        ctx.drawImage(explosion, bomba.axisX, bomba.axisY, bomba.size * bomba.scale, bomba.size * bomba.scale);
-                    }
-                });
-
-                document.getElementById("score").innerText = score;
-                document.getElementById("time").innerText = Math.floor(time / 1000);
-
-                actualizar();
-                time += 16;
-                requestAnimationFrame(pintar);
+                return
             }
+
+            actualizar();
+
+            
+            ctx.drawImage(goku, jugador.axisX, jugador.axisY, jugador.width, jugador.height);
+
+            
+            muros.forEach(function (muro) {
+                ctx.fillStyle = muro.fillColor;
+                ctx.fillRect(muro.axisX, muro.axisY, muro.width, muro.height);
+            });
+
+            
+            bombas.forEach(function (bomba) {
+                if (bomba.exploded) {
+                    
+                    ctx.drawImage(explosion, bomba.axisX, bomba.axisY, bomba.size, bomba.size);
+                } else {
+                    ctx.drawImage(genkidama, bomba.axisX, bomba.axisY, bomba.size, bomba.size);
+                }
+            });
+            requestAnimationFrame(pintar);
         }
 
         let score = 0;
-        let time = 0;
+        let startTime = null;
 
-        generarObstaculosNoDestructibles(10);
-        generarObstaculosDestructibles(15);
+        function actualizarMarcadores() {
+            const scoreElement = document.getElementById("score");
+            const timeElement = document.getElementById("time");
 
+            const elapsed = Math.floor((Date.now() - startTime) / 1000);
+            scoreElement.textContent = score;
+            timeElement.textContent = elapsed;
+
+            requestAnimationFrame(actualizarMarcadores);
+        }
+
+        
+        generarEscenarioBomberman();
         pintar();
+        actualizarMarcadores();
     </script>
 </body>
 
