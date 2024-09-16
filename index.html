@@ -68,33 +68,18 @@
 
         const explosion = new Image();
         explosion.src = 'explosion.png';
-        explosion.onload = function () {
-            console.log('Imagen de explosión cargada');
-        };
 
         const genkidama = new Image();
         genkidama.src = 'genkidama1.png';
-        genkidama.onload = function () {
-            console.log('Imagen de genkidama cargada');
-        };
 
         const goku = new Image();
         goku.src = 'goku.png';
-        goku.onload = function () {
-            console.log('Imagen de goku cargada');
-        };
 
         const caja = new Image();
         caja.src = 'cajaMadera.png';
-        caja.onload = function () {
-            console.log('Imagen de caja cargada');
-        };
 
         const piedra = new Image();
         piedra.src = 'piedra.png';
-        piedra.onload = function () {
-            console.log('Imagen de piedra cargada');
-        };
 
         class Rectangulo {
             constructor(axisX, axisY, width, height, fillColor, vel, destructible = false) {
@@ -178,7 +163,7 @@
                 gameStarted = true;
                 musica.play();
                 startTime = Date.now();
-                requestAnimationFrame(pintar);
+                requestAnimationFrame(pintar); // Iniciar el renderizado del juego
             }
 
             if (gameStarted) {
@@ -295,49 +280,58 @@
             }
         }
 
+        function mostrarPantallaInicio() {
+            ctx.clearRect(0, 0, myCanvas.width, myCanvas.height);
+
+            ctx.fillStyle = "black";
+            ctx.fillRect(0, 0, myCanvas.width, myCanvas.height);
+
+            ctx.fillStyle = "rgb(239,223,46)";
+            ctx.font = "60px 'DBZ'";
+            ctx.textAlign = "center";
+            ctx.fillText("Dragon Bomberman Z", myCanvas.width / 2, myCanvas.height / 2 - 50);
+
+            ctx.fillStyle = "rgb(223,31,46)";
+            ctx.font = "30px Arial";
+            ctx.fillText("Presiona ENTER para empezar", myCanvas.width / 2, myCanvas.height / 2 + 50);
+
+            ctx.drawImage(goku, 220,50,150,150)
+
+            
+        }
+
         function pintar() {
             ctx.clearRect(0, 0, myCanvas.width, myCanvas.height);
 
-            if (!gameStarted) {
-                ctx.fillStyle = "black";
-                ctx.fillRect(0, 0, myCanvas.width, myCanvas.height);
+            
+            ctx.drawImage(goku, jugador.axisX, jugador.axisY, jugador.width, jugador.height);
 
-                ctx.fillStyle = "rgb(239,223,46)";
-                ctx.font = "60px 'DBZ'";
-                ctx.textAlign = "center";
-                ctx.fillText("Dragon Bomberman Z", myCanvas.width / 2, myCanvas.height / 2 - 50);
+            bombas.forEach(function (bomba) {
+                if (!bomba.exploded) {
+                    ctx.drawImage(genkidama, bomba.axisX, bomba.axisY, bomba.size, bomba.size);
+                } else {
+                    ctx.drawImage(explosion, bomba.axisX - 15, bomba.axisY - 15, bomba.size * 2, bomba.size * 2);
+                }
+            });
 
-                ctx.fillStyle = "rgb(223,31,46)";
-                ctx.font = "30px Arial";
-                ctx.fillText("Presiona ENTER para empezar", myCanvas.width / 2, myCanvas.height / 2 + 50);
-            } else {
-                ctx.drawImage(goku, jugador.axisX, jugador.axisY, jugador.width, jugador.height);
+            muros.forEach(function (muro) {
+                if (muro.destructible) {
+                    ctx.drawImage(caja, muro.axisX, muro.axisY, muro.width, muro.height);
+                } else {
+                    ctx.drawImage(piedra, muro.axisX, muro.axisY, muro.width * 1.2, muro.height * 1.2);
+                }
+            });
 
-                bombas.forEach(function (bomba) {
-                    if (!bomba.exploded) {
-                        ctx.drawImage(genkidama, bomba.axisX, bomba.axisY, bomba.size, bomba.size);
-                    } else {
-                        ctx.drawImage(explosion, bomba.axisX - 15, bomba.axisY - 15, bomba.size * 2, bomba.size * 2);
-                    }
-                });
-
-                muros.forEach(function (muro) {
-                    if (muro.destructible) {
-                        ctx.drawImage(caja, muro.axisX, muro.axisY, muro.width, muro.height);
-                    } else {
-                        ctx.drawImage(piedra, muro.axisX, muro.axisY, muro.width * 1.2, muro.height * 1.2);
-                    }
-                });
-
-                document.getElementById('score').textContent = score;
-                const elapsedTime = Math.floor((Date.now() - startTime) / 1000);
-                document.getElementById('time').textContent = elapsedTime;
-            }
+            document.getElementById('score').textContent = score;
+            const elapsedTime = Math.floor((Date.now() - startTime) / 1000);
+            document.getElementById('time').textContent = elapsedTime;
 
             actualizar();
             requestAnimationFrame(pintar);
         }
 
+        
+        mostrarPantallaInicio();
         generarEscenarioBomberman();
     </script>
 </body>
